@@ -1,5 +1,6 @@
 package com.example.geoquiz
 
+import android.app.Activity
 import android.content.Intent
 import android.nfc.Tag
 import androidx.appcompat.app.AppCompatActivity
@@ -11,6 +12,7 @@ import android.widget.TextView
 import android.widget.Toast
 import androidx.lifecycle.ViewModelProvider
 private const val KEY_INDEX = "index"
+private const val REQUEST_CODE_CHEAT = 0
 
 class MainActivity : AppCompatActivity() {
     private lateinit var negativeButton:Button
@@ -62,8 +64,9 @@ class MainActivity : AppCompatActivity() {
         cheatButton.setOnClickListener{
             val answerIsTrue = quizViewModel.currentQuestionAnswer
             val intent = CheatingActivity.newIntent(this, answerIsTrue)
-            startActivity(intent)
+            startActivityForResult(intent, REQUEST_CODE_CHEAT)
         }
+        updateQuestion()
     }
 
     override fun onSaveInstanceState(outState: Bundle) {
@@ -71,14 +74,29 @@ class MainActivity : AppCompatActivity() {
         outState.putInt(KEY_INDEX, quizViewModel.currentQuestion)
     }
 
+    override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
+        super.onActivityResult(requestCode, resultCode, data)
+        if (resultCode != Activity.RESULT_OK) {
+            return
+        }
+        if (requestCode == REQUEST_CODE_CHEAT){
+            quizViewModel.isCheater = data?.getBooleanExtra(EXTRA_ANSWER_SHOWN, false)?:false
+        }
+    }
+
     private fun updateQuestion(){
         text.setText(quizViewModel.currentQuestionText)
     }
     private fun checkAnswer(userAnswer:Boolean){
-        if (quizViewModel.currentQuestionAnswer == userAnswer){
-            Toast.makeText(this,"Correct",Toast.LENGTH_SHORT).show()
-        }else{
-            Toast.makeText(this,"Not correct",Toast.LENGTH_SHORT).show()
+       val correctAnswer: Boolean = quizViewModel.currentQuestionAnswer
+        val messageResId = when {
+            quizViewModel.isCheater && userAnswer == correctAnswer -> R.string.judgment_toast
+            userAnswer == correctAnswer -> R.string.tv_positive_button
+            else -> R.string.tv_negative_button
+        }
+        Toast.makeText(this, messageResId, Toast.LENGTH_SHORT).show()
+        if (messageResId == R.string.judgment_toast) {
+            quizViewModel.isCheater = false
         }
     }
 }

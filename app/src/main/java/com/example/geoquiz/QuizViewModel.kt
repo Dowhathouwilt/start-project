@@ -20,6 +20,7 @@ class QuizViewModel : ViewModel() {
             true))
 
     var currentQuestion:Int = 0
+    var isCheater = false
     val currentQuestionAnswer:Boolean
         get() = bank[currentQuestion].answer
     val currentQuestionText: Int
